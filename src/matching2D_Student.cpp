@@ -1,5 +1,8 @@
 #include <numeric>
 #include "matching2D.hpp"
+#include <opencv2/features2d.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/xfeatures2d/nonfree.hpp>
 
 using namespace std;
 
@@ -101,3 +104,103 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool b
         cv::waitKey(0);
     }
 }
+
+void detKeypointsHarris(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    int blockSize = 5;
+    int apertureSize = 5;
+    double k = 0.01;
+    double thresh = 0.1;
+    double t = (double)cv::getTickCount();
+    cv::Mat dst = cv::Mat::zeros( img.size(), CV_32FC1 );
+
+    cv::cornerHarris( img, dst, blockSize, apertureSize, k );
+
+    cv::Mat dst_norm;
+    cv::normalize( dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
+
+    for( int i = 0; i < dst.rows ; i++ )
+    {
+        for( int j = 0; j < dst.cols; j++ )
+        {
+            // printf("%f\n", dst.at<float>(i,j));
+            if( dst.at<float>(i,j) > thresh )
+            {
+                cv::KeyPoint newKeyPoint;
+                newKeyPoint.pt = cv::Point2f(i, j);
+                newKeyPoint.size = blockSize;
+                keypoints.push_back(newKeyPoint);
+            }
+        }
+    }
+
+    cv::namedWindow( "corners_window" );
+    cv::imshow( "corners_window", dst_norm );
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "Harris detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+
+    // double t = (double)cv::getTickCount();
+
+    // cv::Ptr<cv::GFTTDetector> gftt = cv::GFTTDetector::create(1000, 0.1, 1, 3, 5, true, 0.4);
+    // gftt->setHarrisDetector(true);
+
+    // t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    // cout << "Harris detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
+void detKeypointsFast(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    double t = (double)cv::getTickCount();
+
+    const cv::Ptr<cv::Feature2D>& detector  = cv::FastFeatureDetector::create(100);
+    detector->detect(img, keypoints);
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "FAST detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
+void detKeypointsBrisk(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    double t = (double)cv::getTickCount();
+
+    const cv::Ptr<cv::Feature2D>& detector  = cv::BRISK::create();
+    detector->detect(img, keypoints);
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "BRISK detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
+void detKeypointsORB(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    double t = (double)cv::getTickCount();
+
+    const cv::Ptr<cv::Feature2D>& detector  = cv::ORB::create();
+    detector->detect(img, keypoints);
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "ORB detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
+void detKeypointsAKAZE(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    double t = (double)cv::getTickCount();
+
+    const cv::Ptr<cv::Feature2D>& detector  = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_KAZE);
+    detector->detect(img, keypoints);
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "AKAZE detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
+void detKeypointsSIFT(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    double t = (double)cv::getTickCount();
+
+    const cv::Ptr<cv::Feature2D>& detector = cv::xfeatures2d::SIFT::create();
+    detector->detect(img, keypoints);
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "SIFT detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+}
+
